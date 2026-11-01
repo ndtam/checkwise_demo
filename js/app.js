@@ -1,16 +1,15 @@
-const $ = (s) => document.querySelector(s),
-  $$ = (s) => document.querySelectorAll(s);
+const $= (s) => document.querySelector(s),$$ = (s) => document.querySelectorAll(s);
+
 const types = {
   message: {
     title: "Phân tích tin nhắn",
     hint: "Dán nội dung SMS, Zalo, Messenger hoặc email vào ô bên dưới.",
-    placeholder:
-      "Ví dụ: “Tài khoản của bạn sắp bị khóa. Hãy bấm vào đường link để xác minh ngay...”",
+    placeholder: "Ví dụ: “Tài khoản của bạn sắp bị khóa. Hãy bấm vào đường link để xác minh ngay...”",
   },
   link: {
     title: "Phân tích đường link",
     hint: "Dán URL bạn nhận được để kiểm tra các dấu hiệu đáng ngờ.",
-    placeholder: "",
+    placeholder: "https://example.com",
   },
   image: {
     title: "Phân tích hình ảnh",
@@ -28,16 +27,16 @@ const types = {
     placeholder: "",
   },
 };
+
 let currentType = "message";
 const messageInput = $("#messageInput"),
   linkInput = $("#linkInput"),
   uploadInput = $("#uploadInput"),
   fileField = $("#fileField"),
   filePreview = $("#filePreview");
-$$(".type-btn").forEach((btn) =>
-  btn.addEventListener("click", () => {
-    currentType = btn.dataset.type;
-    $$(".type-btn").forEach((x) => x.classList.remove("active"));
+
+$$(".type-btn").forEach((btn) => btn.addEventListener("click", () => { currentType = btn.dataset.type; $$
+(".type-btn").forEach((x) => x.classList.remove("active"));
     btn.classList.add("active");
     const t = types[currentType];
     $("#inputTitle").textContent = t.title;
@@ -48,190 +47,197 @@ $$(".type-btn").forEach((btn) =>
       "hidden",
       !["image", "audio", "video"].includes(currentType),
     );
-    messageInput.placeholder = t.placeholder;
+    if (currentType === "message") {
+      messageInput.placeholder = t.placeholder;
+    } else if (currentType === "link") {
+      const urlField = $("#urlField");
+      if (urlField) urlField.placeholder = t.placeholder;
+    }
     $("#charCount").textContent = "0 ký tự";
   }),
 );
-messageInput.addEventListener(
-  "input",
-  () => ($("#charCount").textContent = messageInput.value.length + " ký tự"),
-);
-fileField.addEventListener("change", () => {
-  const f = fileField.files[0];
-  filePreview.innerHTML = f
-    ? `<div class="file-chip"><i class="fa-solid fa-file"></i> ${f.name} • ${(f.size / 1024 / 1024).toFixed(2)} MB</div>`
-    : "";
-});
-$("#menuBtn").addEventListener("click", () =>
-  $("#nav").classList.toggle("open"),
-);
+
+if (messageInput) {
+  messageInput.addEventListener(
+    "input",
+    () => ($("#charCount").textContent = messageInput.value.length + " ký tự"),
+  );
+}
+
+if (fileField) {
+  fileField.addEventListener("change", () => {
+    const f = fileField.files[0];
+    filePreview.innerHTML = f
+      ? `<div class="file-chip"><i class="fa-solid fa-file"></i> ${f.name} • ${(f.size / 1024 / 1024).toFixed(2)} MB</div>`
+      : "";
+  });
+}
+
+const menuBtn = $("#menuBtn");
+if (menuBtn) {
+  menuBtn.addEventListener("click", () => $("#nav").classList.toggle("open"));
+}
+
 const themeBtn = $("#themeBtn");
 const savedTheme = localStorage.getItem("deepguard-theme");
 if (savedTheme === "light") document.body.classList.add("light");
 
 function updateThemeIcon() {
+  if (!themeBtn) return;
   const icon = themeBtn.querySelector("i");
   const isLight = document.body.classList.contains("light");
-  icon.className = isLight ? "fa-solid fa-sun" : "fa-solid fa-moon";
+  if (icon) icon.className = isLight ? "fa-solid fa-sun" : "fa-solid fa-moon";
   themeBtn.setAttribute(
     "aria-label",
     isLight ? "Chuyển sang giao diện tối" : "Chuyển sang giao diện sáng",
   );
-  themeBtn.title = isLight ? "Giao diện sáng" : "Giao diện tối";
 }
-
 updateThemeIcon();
 
-themeBtn.addEventListener("click", () => {
-  document.body.classList.toggle("light");
-  const isLight = document.body.classList.contains("light");
-  localStorage.setItem("deepguard-theme", isLight ? "light" : "dark");
-  updateThemeIcon();
-});
-$("#analyzeBtn").addEventListener("click", () => {
-  const has =
-    currentType === "message"
-      ? messageInput.value.trim()
-      : currentType === "link"
-        ? $("#urlField").value.trim()
-        : fileField.files.length;
-  if (!has) {
-    alert(
-      currentType === "message"
-        ? "Hãy nhập nội dung cần kiểm tra."
-        : "Hãy cung cấp dữ liệu trước khi phân tích.",
-    );
-    return;
-  }
-  const btn = $("#analyzeBtn");
-  btn.disabled = true;
-  btn.innerHTML =
-    '<i class="fa-solid fa-spinner fa-spin"></i> Đang phân tích...';
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Phân tích AI';
-    showResult();
-  }, 1100);
-});
-function showResult() {
-  let score = 58;
-  if (currentType === "message") {
-    const s = messageInput.value.toLowerCase();
-    const hits = [
-      "otp",
-      "mật khẩu",
-      "chuyển tiền",
-      "tài khoản",
-      "khẩn cấp",
-      "xác minh",
-      "trúng thưởng",
-      "công an",
-      "phạt",
-      "link",
-    ].filter((x) => s.includes(x));
-    score = Math.min(96, 42 + hits.length * 8);
-  } else if (currentType === "link") {
-    const u = $("#urlField").value.toLowerCase();
-    score =
-      u.includes("http://") ||
-      u.includes("@") ||
-      u.length > 80 ||
-      /(\.tk|\.top|\.xyz|\.click)(\/|$)/.test(u)
-        ? 82
-        : 38;
-  } else score = 64;
-  const level = score >= 75 ? "high" : score >= 50 ? "medium" : "low";
-  const title =
-    level === "high"
-      ? "Có nhiều dấu hiệu đáng ngờ"
-      : level === "medium"
-        ? "Cần cảnh giác với nội dung này"
-        : "Ít dấu hiệu đáng ngờ được phát hiện";
-  $("#resultTitle").textContent = title;
-  $("#riskScore").textContent = score + "/100";
-  $("#riskBadge").className = "risk " + level;
-  $("#riskBadge").textContent =
-    level === "high"
-      ? "RỦI RO CAO"
-      : level === "medium"
-        ? "CẦN CẢNH GIÁC"
-        : "RỦI RO THẤP";
-  $("#findings").innerHTML = (
-    level === "high"
-  ? [
-      [
-        "fa-clock",
-        "Tạo áp lực",
-        "Nội dung có thể sử dụng cách diễn đạt khẩn cấp, thúc giục bạn phải hành động nhanh hoặc tạo cảm giác nếu không thực hiện ngay thì sẽ xảy ra hậu quả.",
-      ],
-      [
-        "fa-key",
-        "Yêu cầu thông tin",
-        "Có dấu hiệu liên quan đến tài khoản, mật khẩu, mã OTP, thông tin xác thực hoặc các dữ liệu cá nhân mà người dùng không nên cung cấp khi chưa xác minh.",
-      ],
-      [
-        "fa-link",
-        "Kênh không chắc chắn",
-        "Nội dung có thể chứa liên kết hoặc hướng dẫn truy cập vào một kênh chưa được xác minh. Không nên mở liên kết hoặc cung cấp dữ liệu trước khi kiểm tra nguồn.",
-      ],
-    ]
-  : level === "medium"
-    ? [
-        [
-          "fa-circle-question",
-          "Thiếu dấu hiệu rõ ràng",
-          "Nội dung chưa cung cấp đủ thông tin để xác định mức độ đáng tin cậy. Bạn nên kiểm tra thêm người gửi, nguồn thông tin và hoàn cảnh trước khi thực hiện bất kỳ hành động nào.",
-        ],
-        [
-          "fa-magnifying-glass",
-          "Xác minh thêm",
-          "Hãy tìm thông tin từ website, ứng dụng hoặc kênh chính thức của tổ chức liên quan để đối chiếu nội dung trước khi nhấp vào liên kết hoặc phản hồi.",
-        ],
-        [
-          "fa-shield-halved",
-          "Bảo vệ dữ liệu",
-          "Không cung cấp OTP, mật khẩu, mã xác nhận, thông tin tài khoản hoặc dữ liệu cá nhân nhạy cảm nếu chưa chắc chắn về danh tính và mục đích của người yêu cầu.",
-        ],
-      ]
-    : [
-        [
-          "fa-circle-check",
-          "Không thấy dấu hiệu mạnh",
-          "Phân tích mô phỏng hiện chưa phát hiện những tín hiệu đáng ngờ nổi bật trong nội dung. Tuy nhiên, kết quả này không đồng nghĩa với việc nội dung chắc chắn an toàn.",
-        ],
-        [
-          "fa-user-check",
-          "Kiểm tra nguồn",
-          "Bạn vẫn nên xác minh người gửi, địa chỉ liên hệ và nguồn xuất phát của nội dung để đảm bảo thông tin thực sự đến từ cá nhân hoặc tổ chức đáng tin cậy.",
-        ],
-        [
-          "fa-shield-halved",
-          "Tiếp tục thận trọng",
-          "AI chỉ đưa ra đánh giá dựa trên các tín hiệu được phân tích và không thể đảm bảo nội dung an toàn tuyệt đối. Hãy kiểm tra kỹ trước khi cung cấp thông tin hoặc thực hiện hành động.",
-        ],
-      ]
-  )
-    .map(
-      (x) =>
-        `<div class="finding"><i class="fa-solid ${x[0]}"></i><strong>${x[1]}</strong><p>${x[2]}</p></div>`,
-    )
-    .join("");
-  const sec = $("#result");
-  sec.classList.remove("hidden");
-  sec.scrollIntoView({ behavior: "smooth", block: "center" });
-  setTimeout(() => ($("#meterFill").style.width = score + "%"), 100);
+if (themeBtn) {
+  themeBtn.addEventListener("click", () => {
+    document.body.classList.toggle("light");
+    const isLight = document.body.classList.contains("light");
+    localStorage.setItem("deepguard-theme", isLight ? "light" : "dark");
+    updateThemeIcon();
+  });
 }
-$("#newCheck").addEventListener("click", () =>
-  $("#checker").scrollIntoView({ behavior: "smooth" }),
-);
-$("#copyResult").addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText(
-      `DeepGuard AI: ${$("#resultTitle").textContent} — ${$("#riskScore").textContent}`,
-    );
-    alert("Đã sao chép kết quả.");
-  } catch (e) {}
-});
+
+// Chuyển tệp sang chuỗi Base64
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = (error) => reject(error);
+  });
+}
+
+// Gửi yêu cầu phân tích tới Server Node.js
+const analyzeBtn = $("#analyzeBtn");
+if (analyzeBtn) {
+  analyzeBtn.addEventListener("click", async () => {
+    let contentToAnalyze = "";
+    let fileBase64 = null;
+    let fileMime = null;
+
+    if (currentType === "message") {
+      contentToAnalyze = messageInput.value.trim();
+      if (!contentToAnalyze) {
+        alert("Hãy nhập nội dung tin nhắn cần kiểm tra.");
+        return;
+      }
+    } else if (currentType === "link") {
+      const urlField = $("#urlField");
+      contentToAnalyze = urlField ? urlField.value.trim() : "";
+      if (!contentToAnalyze) {
+        alert("Hãy nhập đường link URL cần kiểm tra.");
+        return;
+      }
+    } else {
+      if (fileField && fileField.files && fileField.files.length > 0) {
+        const file = fileField.files[0];
+        try {
+          fileBase64 = await fileToBase64(file);
+          fileMime = file.type || 'image/jpeg';
+          contentToAnalyze = `Đính kèm tệp: ${file.name}`;
+        } catch (e) {
+          console.error(e);
+          alert("Lỗi khi xử lý tệp tải lên.");
+          return;
+        }
+      } else {
+        alert("Vui lòng chọn hoặc kéo thả một tệp để tải lên.");
+        return;
+      }
+    }
+
+    analyzeBtn.disabled = true;
+    analyzeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI đang phân tích...';
+
+    try {
+      const response = await fetch('http://localhost:3000/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          promptText: contentToAnalyze,
+          fileData: fileBase64,
+          mimeType: fileMime
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        showAIResult(data.result);
+      } else {
+        alert("Lỗi từ AI: " + data.error);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Không thể kết nối đến Server Backend (đảm bảo bạn đã chạy node server.js).");
+    } finally {
+      analyzeBtn.disabled = false;
+      analyzeBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Phân tích AI';
+    }
+  });
+}
+
+function showAIResult(aiText) {
+  const resultSection = $("#result");
+  const resultTitle = $("#resultTitle");
+  const riskBadge = $("#riskBadge");
+  const riskScore = $("#riskScore");
+  const meterFill = $("#meterFill");
+  const findingsContainer = $("#findings");
+
+  if (resultSection) {
+    resultSection.classList.remove("hidden");
+    resultSection.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  if (resultTitle) resultTitle.textContent = "Báo cáo phân tích chuyên sâu từ AI Gemini";
+  if (riskBadge) {
+    riskBadge.textContent = "HOÀN TẤT";
+    riskBadge.className = "risk medium";
+  }
+  if (riskScore) riskScore.textContent = "AI Check";
+  if (meterFill) meterFill.style.width = "85%";
+
+  if (findingsContainer) {
+    findingsContainer.innerHTML = `
+      <div class="finding" style="grid-column: 1 / -1; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 8px;">
+        <i class="fa-solid fa-shield-halved" style="font-size: 24px; margin-bottom: 10px; color: var(--cyan, #25d9ff);"></i>
+        <strong style="font-size: 1.1rem; display: block; margin-bottom: 8px;">Kết quả đánh giá chi tiết:</strong>
+        <p style="line-height: 1.6; color: #e2e8f0; white-space: pre-line;">${aiText}</p>
+      </div>
+    `;
+  }
+}
+
+const newCheckBtn = $("#newCheck");
+if (newCheckBtn) {
+  newCheckBtn.addEventListener("click", () => {
+    const checker = $("#checker");
+    if (checker) checker.scrollIntoView({ behavior: "smooth" });
+    const resultSection = $("#result");
+    if (resultSection) resultSection.classList.add("hidden");
+  });
+}
+
+const copyResultBtn = $("#copyResult");
+if (copyResultBtn) {
+  copyResultBtn.addEventListener("click", async () => {
+    try {
+      const findingsText = $("#findings") ? $("#findings").innerText : "";
+      await navigator.clipboard.writeText(`CHECKWISE AI Report:\n${findingsText}`);
+      alert("Đã sao chép kết quả vào bộ nhớ tạm.");
+    } catch (e) {}
+  });
+}
+
+// Hiệu ứng cuộn trang và đếm số
 const io = new IntersectionObserver(
   (es) =>
     es.forEach((e) => {
@@ -239,22 +245,5 @@ const io = new IntersectionObserver(
     }),
   { threshold: 0.12 },
 );
-$$(".reveal").forEach((x) => io.observe(x));
-const cio = new IntersectionObserver(
-  (es) =>
-    es.forEach((e) => {
-      if (e.isIntersecting) {
-        const n = e.target.dataset.count;
-        if (n) {
-          let i = 0;
-          const t = setInterval(() => {
-            i++;
-            e.target.textContent = i;
-            if (i >= +n) clearInterval(t);
-          }, 45);
-        }
-      }
-    }),
-  { threshold: 0.8 },
-);
-$$("[data-count]").forEach((x) => cio.observe(x));
+$$(".reveal").forEach((x) => io.observe(x));  const cio = new IntersectionObserver( (es) => es.forEach((e) => { if (e.isIntersecting) { const n = e.target.dataset.count; if (n) { let i = 0; const t = setInterval(() => { i++; e.target.textContent = i; if (i >= +n) clearInterval(t); }, 45); } } }), { threshold: 0.8 }, ); $$
+("[data-count]").forEach((x) => cio.observe(x));
