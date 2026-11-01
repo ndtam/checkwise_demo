@@ -29,7 +29,12 @@ app.get("/", (req, res) => {
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-console.log("GEMINI_API_KEY:", process.env.GEMINI_API_KEY);
+console.log("======== DEBUG ========");
+console.log("KEY:", process.env.GEMINI_API_KEY);
+console.log("LENGTH:", process.env.GEMINI_API_KEY?.length);
+console.log("START:", process.env.GEMINI_API_KEY?.substring(0, 10));
+console.log("END:", process.env.GEMINI_API_KEY?.slice(-10));
+console.log("=======================");
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
