@@ -29,14 +29,41 @@ app.get("/", (req, res) => {
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-console.log("======== DEBUG ========");
-console.log("KEY:", process.env.GEMINI_API_KEY);
-console.log("LENGTH:", process.env.GEMINI_API_KEY?.length);
-console.log("START:", process.env.GEMINI_API_KEY?.substring(0, 10));
-console.log("END:", process.env.GEMINI_API_KEY?.slice(-10));
-console.log("=======================");
-
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+// THÊM ĐOẠN NÀY NGAY SAU const ai
+
+const MODELS = [
+  "gemini-3.8-flash",
+  "gemini-3.8-flash-lite"
+];
+
+async function generateWithFallback(contents) {
+  let lastError;
+
+  for (const model of MODELS) {
+    try {
+      console.log(`Trying model: ${model}`);
+
+      const response = await ai.models.generateContent({
+        model,
+        contents,
+      });
+
+      console.log(`Success with ${model}`);
+      return response;
+    } catch (error) {
+      console.error(`${model} failed:`, error.status);
+      lastError = error;
+
+      if (error.status !== 503) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError;
+}
 
 app.post("/api/analyze", async (req, res) => {
   try {
@@ -74,10 +101,7 @@ BƯỚC 2: PHÂN TÍCH VÀ ĐÁNH GIÁ RỦI RO
         : systemInstruction,
     );
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash", // Cập nhật tên model mới theo thông báo lỗi
-      contents: contents,
-    });
+    const response = await generateWithFallback(contents);
     res.json({ success: true, result: response.text });
   } catch (error) {
     console.error("Lỗi khi gọi Gemini AI:", error);
