@@ -75,7 +75,7 @@ BƯỚC 2: PHÂN TÍCH VÀ ĐÁNH GIÁ RỦI RO
     );
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash", // Cập nhật tên model mới theo thông báo lỗi
+      model: "gemini-3.8-flash", // Cập nhật tên model mới theo thông báo lỗi
       contents: contents,
     });
     res.json({ success: true, result: response.text });
