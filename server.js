@@ -29,6 +29,8 @@ app.get("/", (req, res) => {
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+console.log("GEMINI_API_KEY:", process.env.GEMINI_API_KEY);
+
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.post("/api/analyze", async (req, res) => {

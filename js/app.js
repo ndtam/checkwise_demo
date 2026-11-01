@@ -156,17 +156,6 @@ if (analyzeBtn) {
     analyzeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI đang phân tích...';
 
     try {
-      // const response = await fetch('http://localhost:3000/api/analyze', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({ 
-      //     promptText: contentToAnalyze,
-      //     fileData: fileBase64,
-      //     mimeType: fileMime
-      //   }),
-      // });
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
