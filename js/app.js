@@ -1,10 +1,12 @@
-const $= (s) => document.querySelector(s),$$ = (s) => document.querySelectorAll(s);
+const $ = (s) => document.querySelector(s),
+  $$ = (s) => document.querySelectorAll(s);
 
 const types = {
   message: {
     title: "Phân tích tin nhắn",
     hint: "Dán nội dung SMS, Zalo, Messenger hoặc email vào ô bên dưới.",
-    placeholder: "Ví dụ: “Tài khoản của bạn sắp bị khóa. Hãy bấm vào đường link để xác minh ngay...”",
+    placeholder:
+      "Ví dụ: “Tài khoản của bạn sắp bị khóa. Hãy bấm vào đường link để xác minh ngay...”",
   },
   link: {
     title: "Phân tích đường link",
@@ -35,8 +37,10 @@ const messageInput = $("#messageInput"),
   fileField = $("#fileField"),
   filePreview = $("#filePreview");
 
-$$(".type-btn").forEach((btn) => btn.addEventListener("click", () => { currentType = btn.dataset.type; $$
-(".type-btn").forEach((x) => x.classList.remove("active"));
+$$(".type-btn").forEach((btn) =>
+  btn.addEventListener("click", () => {
+    currentType = btn.dataset.type;
+    $$(".type-btn").forEach((x) => x.classList.remove("active"));
     btn.classList.add("active");
     const t = types[currentType];
     $("#inputTitle").textContent = t.title;
@@ -45,7 +49,7 @@ $$(".type-btn").forEach((btn) => btn.addEventListener("click", () => { currentTy
     linkInput.classList.toggle("hidden", currentType !== "link");
     uploadInput.classList.toggle(
       "hidden",
-      !["image", "audio", "video"].includes(currentType),
+      !["image", "audio", "video"].includes(currentType)
     );
     if (currentType === "message") {
       messageInput.placeholder = t.placeholder;
@@ -54,13 +58,13 @@ $$(".type-btn").forEach((btn) => btn.addEventListener("click", () => { currentTy
       if (urlField) urlField.placeholder = t.placeholder;
     }
     $("#charCount").textContent = "0 ký tự";
-  }),
+  })
 );
 
 if (messageInput) {
   messageInput.addEventListener(
     "input",
-    () => ($("#charCount").textContent = messageInput.value.length + " ký tự"),
+    () => ($("#charCount").textContent = messageInput.value.length + " ký tự")
   );
 }
 
@@ -68,7 +72,11 @@ if (fileField) {
   fileField.addEventListener("change", () => {
     const f = fileField.files[0];
     filePreview.innerHTML = f
-      ? `<div class="file-chip"><i class="fa-solid fa-file"></i> ${f.name} • ${(f.size / 1024 / 1024).toFixed(2)} MB</div>`
+      ? `<div class="file-chip"><i class="fa-solid fa-file"></i> ${f.name} • ${(
+          f.size /
+          1024 /
+          1024
+        ).toFixed(2)} MB</div>`
       : "";
   });
 }
@@ -89,7 +97,7 @@ function updateThemeIcon() {
   if (icon) icon.className = isLight ? "fa-solid fa-sun" : "fa-solid fa-moon";
   themeBtn.setAttribute(
     "aria-label",
-    isLight ? "Chuyển sang giao diện tối" : "Chuyển sang giao diện sáng",
+    isLight ? "Chuyển sang giao diện tối" : "Chuyển sang giao diện sáng"
   );
 }
 updateThemeIcon();
@@ -108,7 +116,7 @@ function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onload = () => resolve(reader.result.split(",")[1]);
     reader.onerror = (error) => reject(error);
   });
 }
@@ -139,7 +147,7 @@ if (analyzeBtn) {
         const file = fileField.files[0];
         try {
           fileBase64 = await fileToBase64(file);
-          fileMime = file.type || 'image/jpeg';
+          fileMime = file.type || "image/jpeg";
           contentToAnalyze = `Đính kèm tệp: ${file.name}`;
         } catch (e) {
           console.error(e);
@@ -153,20 +161,31 @@ if (analyzeBtn) {
     }
 
     analyzeBtn.disabled = true;
-    analyzeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI đang phân tích...';
+    analyzeBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> AI đang phân tích...';
+
+    const clientStart = performance.now();
+    console.log(`[client] Bắt đầu gửi request lúc ${new Date().toISOString()}`);
 
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
+      const response = await fetch("/api/analyze", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           promptText: contentToAnalyze,
           fileData: fileBase64,
-          mimeType: fileMime
+          mimeType: fileMime,
         }),
       });
+
+      console.log(
+        `[client] Nhận response sau ${(
+          (performance.now() - clientStart) /
+          1000
+        ).toFixed(1)}s`
+      );
 
       const data = await response.json();
       if (data.success) {
@@ -176,7 +195,9 @@ if (analyzeBtn) {
       }
     } catch (error) {
       console.error(error);
-      alert("Không thể kết nối đến Server Backend (đảm bảo bạn đã chạy node server.js).");
+      alert(
+        "Không thể kết nối đến Server Backend (đảm bảo bạn đã chạy node server.js)."
+      );
     } finally {
       analyzeBtn.disabled = false;
       analyzeBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Phân tích AI';
@@ -197,7 +218,8 @@ function showAIResult(aiText) {
     resultSection.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
-  if (resultTitle) resultTitle.textContent = "Báo cáo phân tích chuyên sâu từ AI Gemini";
+  if (resultTitle)
+    resultTitle.textContent = "Báo cáo phân tích chuyên sâu từ AI Gemini";
   if (riskBadge) {
     riskBadge.textContent = "HOÀN TẤT";
     riskBadge.className = "risk medium";
@@ -231,7 +253,9 @@ if (copyResultBtn) {
   copyResultBtn.addEventListener("click", async () => {
     try {
       const findingsText = $("#findings") ? $("#findings").innerText : "";
-      await navigator.clipboard.writeText(`CHECKWISE AI Report:\n${findingsText}`);
+      await navigator.clipboard.writeText(
+        `CHECKWISE AI Report:\n${findingsText}`
+      );
       alert("Đã sao chép kết quả vào bộ nhớ tạm.");
     } catch (e) {}
   });
@@ -243,7 +267,24 @@ const io = new IntersectionObserver(
     es.forEach((e) => {
       if (e.isIntersecting) e.target.classList.add("show");
     }),
-  { threshold: 0.12 },
+  { threshold: 0.12 }
 );
-$$(".reveal").forEach((x) => io.observe(x));  const cio = new IntersectionObserver( (es) => es.forEach((e) => { if (e.isIntersecting) { const n = e.target.dataset.count; if (n) { let i = 0; const t = setInterval(() => { i++; e.target.textContent = i; if (i >= +n) clearInterval(t); }, 45); } } }), { threshold: 0.8 }, ); $$
-("[data-count]").forEach((x) => cio.observe(x));
+$$(".reveal").forEach((x) => io.observe(x));
+const cio = new IntersectionObserver(
+  (es) =>
+    es.forEach((e) => {
+      if (e.isIntersecting) {
+        const n = e.target.dataset.count;
+        if (n) {
+          let i = 0;
+          const t = setInterval(() => {
+            i++;
+            e.target.textContent = i;
+            if (i >= +n) clearInterval(t);
+          }, 45);
+        }
+      }
+    }),
+  { threshold: 0.8 }
+);
+$$("[data-count]").forEach((x) => cio.observe(x));

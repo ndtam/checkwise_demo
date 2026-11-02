@@ -12,7 +12,6 @@ const __dirname = path.dirname(__filename);
 
 console.log("Serving from:", __dirname);
 
-
 const app = express();
 app.use(cors());
 
@@ -33,27 +32,58 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // THÊM ĐOẠN NÀY NGAY SAU const ai
 
-const MODELS = [
-  "gemini-3.8-flash",
-  "gemini-3.8-flash-lite"
-];
+const MODELS = ["gemini-3.8-flash", "gemini-3.8-flash-lite"];
+
+const SYSTEM_INSTRUCTION = `
+  Bạn là chuyên gia an ninh mạng và phòng chống lừa đảo.
+  
+  NHIỆM VỤ:
+  BƯỚC 1: TRÍCH XUẤT VÀ PHÂN TÍCH NỘI DUNG (QUAN TRỌNG)
+  - Nếu có hình ảnh/tệp: Bạn PHẢI đọc kỹ và trích xuất toàn bộ văn bản (OCR) xuất hiện trong đó (kể cả chữ nhỏ, mờ, watermark). Viết phần văn bản đọc được này lên đầu.
+  - Nếu là văn bản/URL: Đọc trực tiếp.
+  
+  BƯỚC 2: PHÂN TÍCH VÀ ĐÁNH GIÁ RỦI RO
+  - Kiểm tra các dấu hiệu lừa đảo, giả mạo thương hiệu, yêu cầu chuyển tiền/OTP.
+  - Đưa ra kết luận mức độ: LOW (Thấp), MEDIUM (Trung bình), hoặc HIGH (Cao) kèm khuyến nghị cụ thể.
+  `;
 
 async function generateWithFallback(contents) {
   let lastError;
 
   for (const model of MODELS) {
     try {
-      console.log(`Trying model: ${model}`);
+      const t0 = Date.now();
+      console.log(`[${new Date().toISOString()}] Trying model: ${model}`);
 
       const response = await ai.models.generateContent({
         model,
         contents,
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          maxOutputTokens: 2048,
+          // Tắt/giảm "thinking" để giảm độ trễ. Nếu model báo lỗi vì field
+          // này không được hỗ trợ ở phiên bản SDK/model đang dùng, báo lại
+          // thông báo lỗi để đổi tên tham số cho đúng.
+          thinkingConfig: {
+            thinkingBudget: 0,
+          },
+        },
       });
 
-      console.log(`Success with ${model}`);
+      const elapsedSec = ((Date.now() - t0) / 1000).toFixed(1);
+      console.log(`Success with ${model} (${elapsedSec}s)`);
+      if (response.usageMetadata) {
+        const { promptTokenCount, thoughtsTokenCount, candidatesTokenCount } =
+          response.usageMetadata;
+        console.log(
+          `  tokens -> prompt: ${promptTokenCount}, thoughts: ${
+            thoughtsTokenCount ?? 0
+          }, output: ${candidatesTokenCount}`
+        );
+      }
       return response;
     } catch (error) {
-      console.error(`${model} failed:`, error.status);
+      console.error(`${model} failed:`, error.status, error.message);
       lastError = error;
 
       if (error.status !== 503) {
@@ -66,6 +96,8 @@ async function generateWithFallback(contents) {
 }
 
 app.post("/api/analyze", async (req, res) => {
+  const reqStart = Date.now();
+  console.log(`[${new Date().toISOString()}] POST /api/analyze received`);
   try {
     const { promptText, fileData, mimeType } = req.body;
 
@@ -81,27 +113,16 @@ app.post("/api/analyze", async (req, res) => {
       });
     }
 
-    // Prompt hướng dẫn chi tiết bắt buộc AI đọc OCR ảnh
-    const systemInstruction = `
-Bạn là chuyên gia an ninh mạng và phòng chống lừa đảo.
-
-NHIỆM VỤ:
-BƯỚC 1: TRÍCH XUẤT VÀ PHÂN TÍCH NỘI DUNG (QUAN TRỌNG)
-- Nếu có hình ảnh/tệp: Bạn PHẢI đọc kỹ và trích xuất toàn bộ văn bản (OCR) xuất hiện trong đó (kể cả chữ nhỏ, mờ, watermark). Viết phần văn bản đọc được này lên đầu.
-- Nếu là văn bản/URL: Đọc trực tiếp.
-
-BƯỚC 2: PHÂN TÍCH VÀ ĐÁNH GIÁ RỦI RO
-- Kiểm tra các dấu hiệu lừa đảo, giả mạo thương hiệu, yêu cầu chuyển tiền/OTP.
-- Đưa ra kết luận mức độ: LOW (Thấp), MEDIUM (Trung bình), hoặc HIGH (Cao) kèm khuyến nghị cụ thể.
-`;
-
     contents.push(
       promptText
-        ? `${systemInstruction}\n\nYêu cầu thêm từ người dùng: ${promptText}`
-        : systemInstruction,
+        ? `Yêu cầu thêm từ người dùng: ${promptText}`
+        : "Hãy phân tích nội dung được đính kèm."
     );
 
     const response = await generateWithFallback(contents);
+    console.log(
+      `Total request time: ${((Date.now() - reqStart) / 1000).toFixed(1)}s`
+    );
     res.json({ success: true, result: response.text });
   } catch (error) {
     console.error("Lỗi khi gọi Gemini AI:", error);
@@ -109,10 +130,6 @@ BƯỚC 2: PHÂN TÍCH VÀ ĐÁNH GIÁ RỦI RO
   }
 });
 
-// const PORT = 3000;
-// app.listen(PORT, () => {
-//   console.log(`Server Backend đang chạy tại: http://localhost:${PORT}`);
-// });
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
