@@ -65,7 +65,7 @@ async function generateWithFallback(contents) {
           // này không được hỗ trợ ở phiên bản SDK/model đang dùng, báo lại
           // thông báo lỗi để đổi tên tham số cho đúng.
           thinkingConfig: {
-            thinkingBudget: 0,
+            thinkingLevel: "minimal",
           },
         },
       });
