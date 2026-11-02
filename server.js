@@ -32,7 +32,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // THÊM ĐOẠN NÀY NGAY SAU const ai
 
-const MODELS = ["gemini-3.8-flash", "gemini-3.8-flash-lite"];
+const MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
 
 const SYSTEM_INSTRUCTION = `
   Bạn là chuyên gia an ninh mạng và phòng chống lừa đảo.
