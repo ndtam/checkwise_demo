@@ -32,7 +32,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // THÊM ĐOẠN NÀY NGAY SAU const ai
 
-const MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
+const MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash"];
 
 const SYSTEM_INSTRUCTION = `
   Bạn là chuyên gia an ninh mạng và phòng chống lừa đảo.
@@ -61,9 +61,7 @@ async function generateWithFallback(contents) {
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
           maxOutputTokens: 2048,
-          // Tắt/giảm "thinking" để giảm độ trễ. Nếu model báo lỗi vì field
-          // này không được hỗ trợ ở phiên bản SDK/model đang dùng, báo lại
-          // thông báo lỗi để đổi tên tham số cho đúng.
+          // Giảm thời gian thinking
           thinkingConfig: {
             thinkingLevel: "low",
           },
